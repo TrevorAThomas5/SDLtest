@@ -1,0 +1,6 @@
+# vertices (Y followed by list of Xs)
+vertex -1 -1 1
+vertex 1 0
+
+# sectors (floor height, ceiling height, then vertex number in clockwise order)
+sector 0 14 0 1 2
