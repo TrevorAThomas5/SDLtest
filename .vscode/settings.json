@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "sdl.h": "c"
+        "sdl.h": "c",
+        "cmath": "cpp",
+        "xstring": "cpp"
     }
 }
