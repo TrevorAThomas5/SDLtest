@@ -9,12 +9,14 @@
 
 using namespace std;
 
+
 /**
  * 2D data
  */
 struct xy {
     float x, y;
 };
+
 
 /**
  * 3D data
@@ -23,12 +25,21 @@ struct xyz {
     float x, y, z;
 };
 
+
+/**
+ * a 2x2 matrix
+ */
+struct mat2x2 {
+    float m11, m12;
+    float m21, m22;
+};
+
+
 /**
  * A sector of the map
  */
 class Sector {
   public:
-
     Sector() : npoints(0) {}
 
     float floor;
@@ -38,17 +49,17 @@ class Sector {
     unsigned int npoints;
 };
 
+
 /**
  * A player character
  */
 class Player {
   public:
-
     Player() {}
 
     xyz position;
     xyz velocity;
-    float angle, anglesin, anglecos, yaw;
+    float angle;            // angle from 0 degrees to 360 degrees
     unsigned int sector;
 };
 
@@ -58,16 +69,27 @@ static vector<Sector*> sectors;
 // the player character
 static Player player;
 
+// key press
+static bool keys[322];
+
 // debug file
-ofstream errorFile;
+static ofstream errorFile;
+
+
+/**
+ * multiplies a 2d vector by a 2x2 matrix
+ */
+static xy matrixMultiplication(mat2x2 mat, xy vec) {
+
+
+    return vec;
+}
+
 
 /**
  * load into data structure from map file
  */
 static void LoadData() {
-
-    errorFile << "loading data" << endl;
-
     // open the map data file
     FILE* fp = fopen("map.txt", "r");
 
@@ -163,6 +185,7 @@ static void LoadData() {
     fclose(fp);
 }
 
+
 /**
  * free memory
  */
@@ -173,11 +196,11 @@ static void UnloadData() {
     }
 }
 
+
 /**
- * 
+ * render the screen
  */
-static void DrawScreen(SDL_Renderer* renderer) {
-    
+static void DrawScreen(SDL_Renderer* renderer) { 
     // draw the player
     SDL_RenderDrawPoint(renderer, player.position.x + (WIDTH/2), player.position.y + (HEIGHT/2));
 
@@ -199,12 +222,12 @@ static void DrawScreen(SDL_Renderer* renderer) {
     }
 }
 
+
 /**
  * runs the program
  */
 int main(int argc, char** argv) {
-
-
+    // open the error file
     errorFile.open("error.txt");
     errorFile.clear();
 
@@ -226,19 +249,40 @@ int main(int argc, char** argv) {
                 SDL_Event event;
                 
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-                SDL_RenderClear(renderer);
+                //SDL_RenderClear(renderer);
                 
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
                 DrawScreen(renderer);
                 SDL_RenderPresent(renderer);
 
+                // get new input from keyboard
                 while (SDL_PollEvent(&event)) {
                     if (event.type == SDL_QUIT) {
                         done = SDL_TRUE;
                     }
+                    
+                    if(event.type == SDL_KEYDOWN) {
+                        keys[event.key.keysym.sym] = true;
+                    }
+                    if(event.type == SDL_KEYUP) {
+                        keys[event.key.keysym.sym] = false;
+                    }
                 }
-             
-                // SDL_RenderDrawLine(renderer, 340, 240, 320, 200);
+                
+                // process the input
+                if(keys[SDLK_w]) {
+                    player.position.y -= 1.0f;
+                }
+                if(keys[SDLK_s]) {
+                    player.position.y += 1.0f;
+                }
+                if(keys[SDLK_a]) {
+                    player.position.x -= 1.0f;
+                }
+                if(keys[SDLK_d]) {
+                    player.position.x += 1.0f;
+                }
+                
             }
         }
 
@@ -250,11 +294,9 @@ int main(int argc, char** argv) {
         }
     }
 
+    // end program
     UnloadData();
-
     SDL_Quit();
-
     errorFile.close();
-
     return 0;
 }
