@@ -1,4 +1,4 @@
-OBJS = render.c
+OBJS = render.cpp
 
 OBJ_NAME = program.exe
 

@@ -2,47 +2,86 @@
 #include <SDL2/SDL.h>
 #include <vector>
 #include <string>
+#include <fstream>
 
 #define WIDTH 608
 #define HEIGHT 480
 
 using namespace std;
 
+/**
+ * 2D data
+ */
 struct xy {
     float x, y;
 };
 
+/**
+ * 3D data
+ */
 struct xyz {
     float x, y, z;
 };
 
-static class sector {
+/**
+ * A sector of the map
+ */
+class Sector {
   public:
+
+    Sector() : npoints(0) {}
+
     float floor;
     float ceil;
     vector<xy> vertices;
     char* neighbors;
     unsigned int npoints;
-}* sectors;
-static unsigned int NumSectors = 0;
+};
 
-static class player {
+/**
+ * A player character
+ */
+class Player {
   public:
+
+    Player() {}
+
     xyz position;
     xyz velocity;
     float angle, anglesin, anglecos, yaw;
     unsigned int sector;
-} player;
+};
+
+// list of sectors in the map
+static vector<Sector*> sectors;
+
+// the player character
+static Player player;
+
+// debug file
+ofstream errorFile;
 
 /**
  * load into data structure from map file
  */
 static void LoadData() {
-    vector<xy> vertices;
-    vector<sector> sectorList;
+
+    errorFile << "loading data" << endl;
+
+    // open the map data file
     FILE* fp = fopen("map.txt", "r");
+
+    // vector of vertices
+    vector<xy> vertices;
+
+    // working character
     char c = NULL;
+
+    // working string
     string s = "";
+
+    // working sector pointer
+    Sector* sector = NULL;
 
     // process file
     while(c != EOF) {
@@ -70,9 +109,12 @@ static void LoadData() {
 
                 // add vertex to the vector
                 vertices.push_back(vert);
+
                 break;
             case 's':
-                sector sector;
+                // create a new sector on the heap
+                sector = new Sector();
+
                 s = "";
 
                 // ' '
@@ -82,14 +124,14 @@ static void LoadData() {
                 while((c = fgetc(fp)) != ' ') {
                     s += c;
                 }
-                sector.floor = stof(s);
+                sector->floor = stof(s);
 
                 // ceil
                 s = "";
                 while((c = fgetc(fp)) != ' ') {
                     s += c;
                 }
-                sector.ceil = stof(s);
+                sector->ceil = stof(s);
 
                 // vertices
                 while(c != '\n') {
@@ -103,11 +145,15 @@ static void LoadData() {
                     if(s == "") {
                         break;
                     }
-                    sector.vertices.push_back(vertices.at(stof(s)));
+                    sector->vertices.push_back(vertices.at(stof(s)));
+                    sector->npoints++;
                 }
 
+                // add this sector to the sector list
                 sectors.push_back(sector);
 
+                //reset
+                sector = NULL;
                 break;
             default:
                 break;
@@ -121,15 +167,10 @@ static void LoadData() {
  * free memory
  */
 static void UnloadData() {
-    for(unsigned int i = 0; i < NumSectors; i++) {
-        free(sectors.at(i).vertices);
+    // free sectors
+    for(unsigned int i = sectors.size()-1; i >= 0; i--) {
+        delete sectors.at(i);
     }
-    for(unsigned int i = 0; i < NumSectors; i++) {
-        free(sectors[i].neighbors);
-    }
-    free(sectors);
-    sectors = NULL;
-    NumSectors = 0;
 }
 
 /**
@@ -141,14 +182,20 @@ static void DrawScreen(SDL_Renderer* renderer) {
     SDL_RenderDrawPoint(renderer, player.position.x + (WIDTH/2), player.position.y + (HEIGHT/2));
 
     // draw sectors
-    for(unsigned int i = 0; i < NumSectors; i++) {
+    for(unsigned int i = 0; i < sectors.size(); i++) {
         // because the vertices are in clockwise order
-        for(unsigned int j = 0; j < sectors[i].npoints-1; j++) {
-            SDL_RenderDrawLine(renderer, sectors[i].vertices[j].x+(WIDTH/2), 
-                                        sectors[i].vertices[j].y+(HEIGHT/2), 
-                                        sectors[i].vertices[j+1].x+(WIDTH/2), 
-                                        sectors[i].vertices[j+1].y+(HEIGHT/2));
+        for(unsigned int j = 0; j < sectors.at(i)->npoints-1; j++) {
+            SDL_RenderDrawLine(renderer, sectors.at(i)->vertices.at(j).x+(WIDTH/2), 
+                                        sectors.at(i)->vertices.at(j).y+(HEIGHT/2), 
+                                        sectors.at(i)->vertices.at(j+1).x+(WIDTH/2), 
+                                        sectors.at(i)->vertices.at(j+1).y+(HEIGHT/2));
         }
+        SDL_RenderDrawLine(renderer, sectors.at(i)->vertices.at(sectors.at(i)->npoints-1).x
+                                            +(WIDTH/2), 
+                                        sectors.at(i)->vertices.at(sectors.at(i)->npoints-1).y
+                                            +(HEIGHT/2), 
+                                        sectors.at(i)->vertices.at(0).x+(WIDTH/2), 
+                                        sectors.at(i)->vertices.at(0).y+(HEIGHT/2));
     }
 }
 
@@ -157,7 +204,14 @@ static void DrawScreen(SDL_Renderer* renderer) {
  */
 int main(int argc, char** argv) {
 
+
+    errorFile.open("error.txt");
+    errorFile.clear();
+
+    // load map data
     LoadData();
+
+    errorFile << sectors.at(0)->npoints << endl;
 
     // if successfully create video
     if(SDL_Init(SDL_INIT_VIDEO) == 0) {
@@ -199,5 +253,8 @@ int main(int argc, char** argv) {
     UnloadData();
 
     SDL_Quit();
+
+    errorFile.close();
+
     return 0;
 }
