@@ -5,8 +5,9 @@
 #include <fstream>
 #include <math.h>
 
-#define WIDTH 608
+#define WIDTH 1000
 #define HEIGHT 480
+#define FOV 90
 
 using namespace std;
 
@@ -42,7 +43,6 @@ struct mat2x2 {
 class Sector {
   public:
     Sector() : npoints(0) {}
-
     float floor;
     float ceil;
     vector<xy> vertices;
@@ -57,7 +57,6 @@ class Sector {
 class Player {
   public:
     Player() {}
-
     xyz position;
     xyz velocity;
     float angle;            // angle from 0 degrees to 360 degrees
@@ -212,14 +211,19 @@ static void UnloadData() {
  * render the screen
  */
 static void DrawScreen(SDL_Renderer* renderer) { 
-    // draw the player
+    // draw dividing line
+    SDL_RenderDrawLine(renderer, (WIDTH/2), 0, (WIDTH/2), HEIGHT);
+
+    updateRotationMatrix(player.angle);
+    
+    // draw the player still
     SDL_Rect rect;
     rect.x = -3.5;
     rect.y = -3.5;
     rect.w = 7;
     rect.h = 7;
-    rect.x += player.position.x + (WIDTH/2);
-    rect.y += player.position.y + (HEIGHT/2);
+    rect.x += (WIDTH/4);
+    rect.y += (HEIGHT/2);
     SDL_RenderFillRect(renderer, &rect);
 
     // draw the player's direction
@@ -227,10 +231,8 @@ static void DrawScreen(SDL_Renderer* renderer) {
     xy out;
     out.x = 0;
     out.y = -20;
-    xy dir = matrixMultiplication(rot, out);
-    SDL_RenderDrawLine(renderer, player.position.x + (WIDTH/2), player.position.y + (HEIGHT/2), 
-                                 player.position.x + dir.x + (WIDTH/2), player.position.y 
-                                 + dir.y + (HEIGHT/2));
+    SDL_RenderDrawLine(renderer, (WIDTH/4), (HEIGHT/2), 
+                                 out.x + (WIDTH/4), out.y + (HEIGHT/2));
 
     // draw line perpendicular to view direction
     xy p1;
@@ -239,26 +241,96 @@ static void DrawScreen(SDL_Renderer* renderer) {
     xy p2;
     p2.x = 5;
     p2.y = -20;
+    SDL_RenderDrawLine(renderer, p1.x + (WIDTH/4), 
+                                 p1.y + (HEIGHT/2), 
+                                 p2.x + (WIDTH/4), 
+                                 p2.y + (HEIGHT/2));
+
+    // draw the sectors
+    for(unsigned int i = 0; i < sectors.size(); i++) {
+        // because the vertices are in clockwise order
+        for(unsigned int j = 0; j < sectors.at(i)->npoints; j++) {
+            // coords of vertex in world space
+            xy world1;
+            world1.x = sectors.at(i)->vertices.at(j).x - player.position.x;
+            world1.y = sectors.at(i)->vertices.at(j).y - player.position.y;
+            
+            xy world2;
+            // if last edge
+            if(j == (sectors.at(i)->npoints)-1) {
+                world2.x = sectors.at(i)->vertices.at(0).x - player.position.x;
+                world2.y = sectors.at(i)->vertices.at(0).y - player.position.y;
+            }
+            else {
+                world2.x = sectors.at(i)->vertices.at(j+1).x - player.position.x;
+                world2.y = sectors.at(i)->vertices.at(j+1).y - player.position.y;
+            }
+
+            // coords rotated around the player
+            xy post1 = matrixMultiplication(rot, world1);
+            xy post2 = matrixMultiplication(rot, world2);
+
+            SDL_RenderDrawLine(renderer, post1.x+(WIDTH/4), 
+                                         post1.y+(HEIGHT/2), 
+                                         post2.x+(WIDTH/4), 
+                                         post2.y+(HEIGHT/2)); 
+        }                                
+    }
+    
+
+
+
+    // draw the player
+    //SDL_Rect rect;
+    rect.x = -3.5;
+    rect.y = -3.5;
+    rect.w = 7;
+    rect.h = 7;
+    rect.x += player.position.x + (3*WIDTH/4);
+    rect.y += player.position.y + (HEIGHT/2);
+    SDL_RenderFillRect(renderer, &rect);
+
+    // draw the player's direction
+    updateRotationMatrix(player.angle);
+    //xy out;
+    out.x = 0;
+    out.y = -20;
+    xy dir = matrixMultiplication(rot, out);
+    SDL_RenderDrawLine(renderer, player.position.x + (3*WIDTH/4), player.position.y + (HEIGHT/2), 
+                                 player.position.x - dir.x + (3*WIDTH/4), player.position.y 
+                                 + dir.y + (HEIGHT/2));
+
+    // draw line perpendicular to view direction
+    //xy p1;
+    p1.x = -5;
+    p1.y = -20;
+    //xy p2;
+    p2.x = 5;
+    p2.y = -20;
     xy perp1 = matrixMultiplication(rot, p1);
     xy perp2 = matrixMultiplication(rot, p2);
-    SDL_RenderDrawLine(renderer, player.position.x + perp1.x + (WIDTH/2), player.position.y + perp1.y + (HEIGHT/2), 
-                                 player.position.x + perp2.x + (WIDTH/2), player.position.y + perp2.y + (HEIGHT/2));
+    SDL_RenderDrawLine(renderer, player.position.x - perp1.x + (3*WIDTH/4), 
+                                 player.position.y + perp1.y + (HEIGHT/2), 
+                                 player.position.x - perp2.x + (3*WIDTH/4), 
+                                 player.position.y + perp2.y + (HEIGHT/2));
+                                 
 
     // draw sectors
     for(unsigned int i = 0; i < sectors.size(); i++) {
         // because the vertices are in clockwise order
         for(unsigned int j = 0; j < sectors.at(i)->npoints-1; j++) {
-            SDL_RenderDrawLine(renderer, sectors.at(i)->vertices.at(j).x+(WIDTH/2), 
+            SDL_RenderDrawLine(renderer, sectors.at(i)->vertices.at(j).x+(3*WIDTH/4), 
                                         sectors.at(i)->vertices.at(j).y+(HEIGHT/2), 
-                                        sectors.at(i)->vertices.at(j+1).x+(WIDTH/2), 
+                                        sectors.at(i)->vertices.at(j+1).x+(3*WIDTH/4), 
                                         sectors.at(i)->vertices.at(j+1).y+(HEIGHT/2));
         }
         SDL_RenderDrawLine(renderer, sectors.at(i)->vertices.at(sectors.at(i)->npoints-1).x
-                                            +(WIDTH/2), 
+                                            +(3*WIDTH/4), 
                                         sectors.at(i)->vertices.at(sectors.at(i)->npoints-1).y
                                             +(HEIGHT/2), 
-                                        sectors.at(i)->vertices.at(0).x+(WIDTH/2), 
+                                        sectors.at(i)->vertices.at(0).x+(3*WIDTH/4), 
                                         sectors.at(i)->vertices.at(0).y+(HEIGHT/2));
+                                        
     }
 }
 
@@ -274,15 +346,13 @@ int main(int argc, char** argv) {
     // load map data
     LoadData();
 
-    errorFile << sectors.at(0)->npoints << endl;
-
     // if successfully create video
     if(SDL_Init(SDL_INIT_VIDEO) == 0) {
         SDL_Window* window = NULL;
         SDL_Renderer* renderer = NULL;
 
         // if successfully create renderer
-        if (SDL_CreateWindowAndRenderer(640, 480, 0, &window, &renderer) == 0) {
+        if (SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer) == 0) {
             SDL_bool done = SDL_FALSE;
 
             while (!done) {
@@ -300,7 +370,6 @@ int main(int argc, char** argv) {
                     if (event.type == SDL_QUIT) {
                         done = SDL_TRUE;
                     }
-                    
                     if(event.type == SDL_KEYDOWN) {
                         keys[event.key.keysym.sym] = true;
                     }
@@ -311,23 +380,27 @@ int main(int argc, char** argv) {
                 
                 // movement
                 if(keys[SDLK_w]) {
-                    player.position.y -= 1.0f;
+                    player.position.x -= sinf(player.angle);
+                    player.position.y -= cosf(player.angle);
                 }
                 if(keys[SDLK_s]) {
-                    player.position.y += 1.0f;
+                    player.position.x += sinf(player.angle);
+                    player.position.y += cosf(player.angle);
                 }
                 if(keys[SDLK_a]) {
-                    player.position.x -= 1.0f;
+                    player.position.x -= cosf(player.angle);
+                    player.position.y += sinf(player.angle);
                 }
                 if(keys[SDLK_d]) {
-                    player.position.x += 1.0f;
+                    player.position.x += cosf(player.angle);
+                    player.position.y -= sinf(player.angle);
                 }
                 // rotation
                 if(keys[SDLK_q]) {
-                    player.angle -= 0.05f;
+                    player.angle += 0.02f;
                 }
                 if(keys[SDLK_e]) {
-                    player.angle += 0.05f;
+                    player.angle -= 0.02f;
                 }
                 
             }
