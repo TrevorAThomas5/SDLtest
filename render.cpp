@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <math.h>
 
 #define WIDTH 608
 #define HEIGHT 480
@@ -65,24 +66,34 @@ class Player {
 
 // list of sectors in the map
 static vector<Sector*> sectors;
-
 // the player character
 static Player player;
-
 // key press
 static bool keys[322];
-
 // debug file
 static ofstream errorFile;
+static mat2x2 rot;              // rotation matrix
 
 
 /**
  * multiplies a 2d vector by a 2x2 matrix
  */
 static xy matrixMultiplication(mat2x2 mat, xy vec) {
+    xy ret;
+    ret.x = vec.x*mat.m11 + vec.y*mat.m12; 
+    ret.y = vec.x*mat.m21 + vec.y*mat.m22; 
+    return ret;
+}
 
 
-    return vec;
+/**
+ * updates the rotation matrix with a new angle theta
+ */ 
+static void updateRotationMatrix(float theta) {
+    rot.m11 = cosf(theta);
+    rot.m12 = -sinf(theta);
+    rot.m21 = sinf(theta);
+    rot.m22 = cosf(theta);
 }
 
 
@@ -202,7 +213,36 @@ static void UnloadData() {
  */
 static void DrawScreen(SDL_Renderer* renderer) { 
     // draw the player
-    SDL_RenderDrawPoint(renderer, player.position.x + (WIDTH/2), player.position.y + (HEIGHT/2));
+    SDL_Rect rect;
+    rect.x = -3.5;
+    rect.y = -3.5;
+    rect.w = 7;
+    rect.h = 7;
+    rect.x += player.position.x + (WIDTH/2);
+    rect.y += player.position.y + (HEIGHT/2);
+    SDL_RenderFillRect(renderer, &rect);
+
+    // draw the player's direction
+    updateRotationMatrix(player.angle);
+    xy out;
+    out.x = 0;
+    out.y = -20;
+    xy dir = matrixMultiplication(rot, out);
+    SDL_RenderDrawLine(renderer, player.position.x + (WIDTH/2), player.position.y + (HEIGHT/2), 
+                                 player.position.x + dir.x + (WIDTH/2), player.position.y 
+                                 + dir.y + (HEIGHT/2));
+
+    // draw line perpendicular to view direction
+    xy p1;
+    p1.x = -5;
+    p1.y = -20;
+    xy p2;
+    p2.x = 5;
+    p2.y = -20;
+    xy perp1 = matrixMultiplication(rot, p1);
+    xy perp2 = matrixMultiplication(rot, p2);
+    SDL_RenderDrawLine(renderer, player.position.x + perp1.x + (WIDTH/2), player.position.y + perp1.y + (HEIGHT/2), 
+                                 player.position.x + perp2.x + (WIDTH/2), player.position.y + perp2.y + (HEIGHT/2));
 
     // draw sectors
     for(unsigned int i = 0; i < sectors.size(); i++) {
@@ -249,7 +289,7 @@ int main(int argc, char** argv) {
                 SDL_Event event;
                 
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-                //SDL_RenderClear(renderer);
+                SDL_RenderClear(renderer);
                 
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
                 DrawScreen(renderer);
@@ -269,7 +309,7 @@ int main(int argc, char** argv) {
                     }
                 }
                 
-                // process the input
+                // movement
                 if(keys[SDLK_w]) {
                     player.position.y -= 1.0f;
                 }
@@ -281,6 +321,13 @@ int main(int argc, char** argv) {
                 }
                 if(keys[SDLK_d]) {
                     player.position.x += 1.0f;
+                }
+                // rotation
+                if(keys[SDLK_q]) {
+                    player.angle -= 0.05f;
+                }
+                if(keys[SDLK_e]) {
+                    player.angle += 0.05f;
                 }
                 
             }
