@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "sdl.h": "c",
-        "cmath": "cpp",
-        "xstring": "cpp",
-        "ostream": "cpp",
-        "vector": "cpp"
-    }
-}
