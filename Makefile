@@ -1,4 +1,4 @@
-OBJS = render.cpp
+OBJS = Main.cpp
 
 OBJ_NAME = program.exe
 
