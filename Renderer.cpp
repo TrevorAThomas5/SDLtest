@@ -1,5 +1,27 @@
 #include "Renderer.hpp"
 
+#include <iostream>
+
+
+/**
+ * constructs a new renderer
+ */
+Renderer::Renderer(SDL_Renderer* renderer, Player* player, vector<Sector*>* sectors, 
+             vector<Bullet*>* bullets, ofstream& errorFile) : renderer(renderer), sectors(sectors), 
+             bullets(bullets), player(player), errorFile(errorFile) {
+               rot = new mat2x2;
+               projMat = createProjectionMatrix();
+            
+}
+
+/**
+ * frees memory
+ */
+Renderer::~Renderer() {
+    delete rot;
+    delete projMat;
+}
+
 
 /**
  * render the screen
@@ -9,22 +31,94 @@ void Renderer::drawScreen() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
     // draw dividing line
-    SDL_RenderDrawLine(renderer, HALF_WIDTH, 0, HALF_WIDTH, HEIGHT);
-
-    // draw the bullets to the screen
-    drawBullets();
+    //SDL_RenderDrawLine(renderer, HALF_WIDTH, 0, HALF_WIDTH, HEIGHT);
 
     // the player has turned
     updateRotationMatrix(rot, player->angle);
+
+    // draw the bullets to the screen
+    drawBullets();
     
+    // draw 3D
+    draw3D();
+
     // draw left side
-    drawPlayerCentered();
+    //drawPlayerCentered();
 
     // draw right side
-    drawWorldCentered();
+    //drawWorldCentered();
 
     // end render
     SDL_RenderPresent(renderer);
+}
+
+/**
+ * render 3D scene
+ */
+void Renderer::draw3D() {
+    // draw the sectors
+    for(unsigned int i = 0; i < sectors->size(); i++) {
+        // because the vertices are in clockwise order
+        for(unsigned int j = 0; j < sectors->at(i)->npoints; j++) {
+            // coords of vertex in world space
+            xy world1;
+            world1.x = sectors->at(i)->vertices.at(j).x - player->position.x;
+            world1.y = sectors->at(i)->vertices.at(j).y - player->position.y;
+            
+            xy world2;
+            // if last edge
+            if(j == (sectors->at(i)->npoints)-1) {
+                world2.x = sectors->at(i)->vertices.at(0).x - player->position.x;
+                world2.y = sectors->at(i)->vertices.at(0).y - player->position.y;
+            }
+            else {
+                world2.x = sectors->at(i)->vertices.at(j+1).x - player->position.x;
+                world2.y = sectors->at(i)->vertices.at(j+1).y - player->position.y;
+            }
+
+            // coords rotated around the player
+            xy post1 = matrixMultiplication(rot, world1);
+            xy post2 = matrixMultiplication(rot, world2);
+
+            xyzw view1low;
+            view1low.x = post1.x;
+            view1low.y = sectors->at(i)->floor;
+            view1low.z = post1.y;
+            view1low.w = 1.0f;
+            xyzw view1high;
+            view1high.x = post1.x;
+            view1high.y = sectors->at(i)->ceil; 
+            view1high.z = post1.y;
+            view1high.w = 1.0f;
+
+            xyzw view2low;
+            view2low.x = post2.x;
+            view2low.y = sectors->at(i)->floor;
+            view2low.z = post2.y;
+            view2low.w = 1.0f;
+            xyzw view2high;
+            view2high.x = post2.x;
+            view2high.y = sectors->at(i)->ceil; 
+            view2high.z = post2.y;
+            view2high.w = 1.0f;
+
+            xyz done1low = matrixMultiplication4D(projMat, view1low);
+            xyz done1high = matrixMultiplication4D(projMat, view1high);
+            xyz done2low = matrixMultiplication4D(projMat, view2low);
+            xyz done2high = matrixMultiplication4D(projMat, view2high);
+
+            errorFile << printXYZ(done1low) << endl;
+            errorFile << printXYZ(done1high) << endl;
+            errorFile << printXYZ(done2low) << endl;
+            errorFile << printXYZ(done2high) << endl;
+
+
+            SDL_RenderDrawLine(renderer, done1low.x, done1low.y, done1high.x, done1high.y);
+            SDL_RenderDrawLine(renderer, done1low.x, done1low.y, done2low.x, done2low.y);
+            SDL_RenderDrawLine(renderer, done2low.x, done2low.y, done2high.x, done2high.y);
+            SDL_RenderDrawLine(renderer, done1high.x, done1high.y, done2high.x, done2high.y);
+        }                                
+    }
 }
 
 
@@ -172,4 +266,30 @@ void Renderer::drawWorldCentered() {
 void Renderer::clearScreen() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
+}
+
+
+/**
+ * creates projection matrix
+ */
+mat4x4* Renderer::createProjectionMatrix() {
+    // precalculations
+    float aspectRatio = WIDTH / HEIGHT;
+    float y_scale = ((1.0f / tanf( ((FOV / 2.0f) * 3.141592f)/180.0f )) * aspectRatio);
+    float x_scale = y_scale / aspectRatio;
+    float frustum_length = FAR_PLANE - NEAR_PLANE;
+
+    // fills the matrix
+    mat4x4* projectionMatrix = new mat4x4();
+    projectionMatrix->m00 = x_scale;
+    projectionMatrix->m11 = y_scale;
+    projectionMatrix->m22 = -((FAR_PLANE + NEAR_PLANE) / frustum_length);
+    projectionMatrix->m23 = -1.0f;
+    projectionMatrix->m32 = -((2.0f * NEAR_PLANE * FAR_PLANE) / frustum_length);
+    projectionMatrix->m33 = 0;
+
+
+    errorFile << printMat4x4(*projectionMatrix) << endl;
+
+    return projectionMatrix;
 }

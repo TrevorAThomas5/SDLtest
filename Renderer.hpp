@@ -8,6 +8,8 @@
 #define HALF_WIDTH 500
 #define LEFT 250
 #define RIGHT 750
+#define FAR_PLANE 1000.0f
+#define NEAR_PLANE 0.1f
 
 #include <iostream>
 #include <SDL2/SDL.h>
@@ -30,19 +32,21 @@ class Renderer {
     Player* player;   // pointer to the player
     vector<Bullet*>* bullets;
     vector<Sector*>* sectors;
+    mat4x4* projMat;
+    ofstream& errorFile;
 
 
   public:
     Renderer(SDL_Renderer* renderer, Player* player, vector<Sector*>* sectors, 
-             vector<Bullet*>* bullets) : renderer(renderer), sectors(sectors), 
-             bullets(bullets), player(player) {
-               rot = new mat2x2;
-             }
+             vector<Bullet*>* bullets, ofstream& errorFile);
+    ~Renderer();
     void drawScreen();
+    void draw3D();
     void drawBullets();
     void drawPlayerCentered();
     void drawWorldCentered();
     void clearScreen();
+    mat4x4* createProjectionMatrix();
 
 };
 

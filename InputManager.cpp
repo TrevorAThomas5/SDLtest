@@ -5,9 +5,8 @@
  * handles user input
  */
 SDL_bool InputManager::input() {
-    SDL_Event event;
-
     // get new input from keyboard
+    SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
             return(SDL_TRUE);
@@ -20,14 +19,13 @@ SDL_bool InputManager::input() {
                 bul->direction = player->angle;
                 bullets->push_back(bul);
             }
-
             keys[event.key.keysym.sym] = true;
         }
         if(event.type == SDL_KEYUP) {
             keys[event.key.keysym.sym] = false;
         }
     }
-                
+
     // movement
     if(keys[SDLK_w]) {
         player->position.x -= sinf(player->angle);
@@ -45,6 +43,7 @@ SDL_bool InputManager::input() {
         player->position.x += cosf(player->angle);
         player->position.y -= sinf(player->angle);
     }
+
     // rotation
     if(keys[SDLK_q]) {
         player->angle += 0.02f;

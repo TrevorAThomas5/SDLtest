@@ -29,14 +29,17 @@ int main(int argc, char** argv) {
         // if successfully create renderer
         if (SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &rendererSDL) == 0) {
             SDL_bool done = SDL_FALSE;
-            Renderer* renderer = new Renderer(rendererSDL, player, &sectors, &bullets);
+            Renderer* renderer = new Renderer(rendererSDL, player, &sectors, &bullets, errorFile);
            
             while (!done) {
-                    renderer->clearScreen();
-                    renderer->drawScreen();
-                    done = inputManager->input();
+                renderer->clearScreen();
+                renderer->drawScreen();
+                done = inputManager->input();
             }
+            delete renderer;
         }
+
+        // clear SDL memory
         if(rendererSDL) {
             SDL_DestroyRenderer(rendererSDL);
         }
@@ -49,5 +52,8 @@ int main(int argc, char** argv) {
     fileHandler->unloadData();
     SDL_Quit();
     errorFile.close();
+    delete fileHandler;
+    delete player;
+    delete inputManager;
     return 0;
 }

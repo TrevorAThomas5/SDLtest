@@ -13,12 +13,17 @@ using namespace std;
  */
 class InputManager {
   private:
-    bool keys[322];  // key press
     Player* player;
     vector<Bullet*>* bullets;
+    bool keys[322];  // key press
 
   public:
-    InputManager(Player* player, vector<Bullet*>* bullets) : player(player), bullets(bullets) {}
+    InputManager(Player* player, vector<Bullet*>* bullets) : player(player), bullets(bullets) {
+        for(unsigned int i = 0; i < 322; i++) {
+            keys[i] = false;
+        }
+    }
+    
     SDL_bool input();
 };
 
