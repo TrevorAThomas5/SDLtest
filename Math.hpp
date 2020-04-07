@@ -89,6 +89,19 @@ static void updateRotationMatrix(mat2x2* rot, float theta) {
 }
 
 
+
+/**
+ * print xy
+ */
+static string printXY(xy& vec) {
+    string str = "";
+    str += to_string(vec.x);
+    str += "\t";
+    str += to_string(vec.y);
+    return str;
+}
+
+
 /**
  * print xyz
  */

@@ -31,7 +31,9 @@ void Renderer::drawScreen() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
     // draw dividing line
-    //SDL_RenderDrawLine(renderer, HALF_WIDTH, 0, HALF_WIDTH, HEIGHT);
+    SDL_RenderDrawLine(renderer, .333f*WIDTH, 0, .333f*WIDTH, HEIGHT);
+    SDL_RenderDrawLine(renderer, .666f*WIDTH, 0, .666f*WIDTH, HEIGHT);
+
 
     // the player has turned
     updateRotationMatrix(rot, player->angle);
@@ -43,10 +45,10 @@ void Renderer::drawScreen() {
     draw3D();
 
     // draw left side
-    //drawPlayerCentered();
+    drawPlayerCentered();
 
     // draw right side
-    //drawWorldCentered();
+    drawWorldCentered();
 
     // end render
     SDL_RenderPresent(renderer);
@@ -64,7 +66,6 @@ void Renderer::draw3D() {
             xy world1;
             world1.x = sectors->at(i)->vertices.at(j).x - player->position.x;
             world1.y = sectors->at(i)->vertices.at(j).y - player->position.y;
-            
             xy world2;
             // if last edge
             if(j == (sectors->at(i)->npoints)-1) {
@@ -102,21 +103,28 @@ void Renderer::draw3D() {
             view2high.z = post2.y;
             view2high.w = 1.0f;
 
-            xyz done1low = matrixMultiplication4D(projMat, view1low);
-            xyz done1high = matrixMultiplication4D(projMat, view1high);
-            xyz done2low = matrixMultiplication4D(projMat, view2low);
-            xyz done2high = matrixMultiplication4D(projMat, view2high);
+            xy screen1low;
+            screen1low.x = (NEAR_PLANE * view1low.x / -view1low.z) * HALF_WIDTH/2;
+            screen1low.y = -(NEAR_PLANE * view1low.y / -view1low.z) * HALF_HEIGHT;
+            xy screen1high;
+            screen1high.x = (NEAR_PLANE * view1high.x / -view1high.z) * HALF_WIDTH/2;
+            screen1high.y = -(NEAR_PLANE * view1high.y / -view1high.z) * HALF_HEIGHT;
+            xy screen2low;
+            screen2low.x = (NEAR_PLANE * view2low.x / -view2low.z) * HALF_WIDTH/2;
+            screen2low.y = -(NEAR_PLANE * view2low.y / -view2low.z) * HALF_HEIGHT;
+            xy screen2high;
+            screen2high.x = (NEAR_PLANE * view2high.x / -view2high.z) * HALF_WIDTH/2;
+            screen2high.y = -(NEAR_PLANE * view2high.y / -view2high.z) * HALF_HEIGHT;
 
-            errorFile << printXYZ(done1low) << endl;
-            errorFile << printXYZ(done1high) << endl;
-            errorFile << printXYZ(done2low) << endl;
-            errorFile << printXYZ(done2high) << endl;
-
-
-            SDL_RenderDrawLine(renderer, done1low.x, done1low.y, done1high.x, done1high.y);
-            SDL_RenderDrawLine(renderer, done1low.x, done1low.y, done2low.x, done2low.y);
-            SDL_RenderDrawLine(renderer, done2low.x, done2low.y, done2high.x, done2high.y);
-            SDL_RenderDrawLine(renderer, done1high.x, done1high.y, done2high.x, done2high.y);
+            SDL_RenderDrawLine(renderer, screen1low.x+HALF_WIDTH, screen1low.y+HALF_HEIGHT, 
+                               screen1high.x+HALF_WIDTH, screen1high.y+HALF_HEIGHT);
+            SDL_RenderDrawLine(renderer, screen1low.x+HALF_WIDTH, screen1low.y+HALF_HEIGHT, 
+                               screen2low.x+HALF_WIDTH, screen2low.y+HALF_HEIGHT);
+            SDL_RenderDrawLine(renderer, screen2low.x+HALF_WIDTH, screen2low.y+HALF_HEIGHT, 
+                               screen2high.x+HALF_WIDTH, screen2high.y+HALF_HEIGHT);
+            SDL_RenderDrawLine(renderer, screen1high.x+HALF_WIDTH, screen1high.y+HALF_HEIGHT, 
+                               screen2high.x+HALF_WIDTH, screen2high.y+HALF_HEIGHT);
+                               
         }                                
     }
 }
@@ -149,7 +157,7 @@ void Renderer::drawPlayerCentered() {
     rect.y = -3.5;
     rect.w = 7;
     rect.h = 7;
-    rect.x += LEFT;
+    rect.x += .1666f*WIDTH;
     rect.y += HALF_HEIGHT;
     SDL_RenderFillRect(renderer, &rect);
 
@@ -157,8 +165,8 @@ void Renderer::drawPlayerCentered() {
     xy out;
     out.x = 0;
     out.y = -20;
-    SDL_RenderDrawLine(renderer, LEFT, HALF_HEIGHT, 
-                                 out.x + LEFT, out.y + HALF_HEIGHT);
+    SDL_RenderDrawLine(renderer, .1666f*WIDTH, HALF_HEIGHT, 
+                                 out.x + .1666f*WIDTH, out.y + HALF_HEIGHT);
 
     // draw line perpendicular to view direction
     xy p1;
@@ -167,9 +175,9 @@ void Renderer::drawPlayerCentered() {
     xy p2;
     p2.x = 5;
     p2.y = -20;
-    SDL_RenderDrawLine(renderer, p1.x + LEFT, 
+    SDL_RenderDrawLine(renderer, p1.x + .1666f*WIDTH, 
                                  p1.y + HALF_HEIGHT, 
-                                 p2.x + LEFT, 
+                                 p2.x + .1666f*WIDTH, 
                                  p2.y + HALF_HEIGHT);
 
     // draw the sectors
@@ -195,9 +203,9 @@ void Renderer::drawPlayerCentered() {
             // coords rotated around the player
             xy post1 = matrixMultiplication(rot, world1);
             xy post2 = matrixMultiplication(rot, world2);
-            SDL_RenderDrawLine(renderer, post1.x+LEFT, 
+            SDL_RenderDrawLine(renderer, post1.x+.1666f*WIDTH, 
                                          post1.y+HALF_HEIGHT, 
-                                         post2.x+LEFT, 
+                                         post2.x+.1666f*WIDTH, 
                                          post2.y+HALF_HEIGHT); 
         }                                
     }
@@ -214,7 +222,7 @@ void Renderer::drawWorldCentered() {
     rect.y = -3.5;
     rect.w = 7;
     rect.h = 7;
-    rect.x += player->position.x + RIGHT;
+    rect.x += player->position.x + .8333*WIDTH;
     rect.y += player->position.y + HALF_HEIGHT;
     SDL_RenderFillRect(renderer, &rect);
 
@@ -223,8 +231,8 @@ void Renderer::drawWorldCentered() {
     out.x = 0;
     out.y = -20;
     xy dir = matrixMultiplication(rot, out);
-    SDL_RenderDrawLine(renderer, player->position.x + RIGHT, player->position.y + HALF_HEIGHT, 
-                                 player->position.x - dir.x + RIGHT, player->position.y 
+    SDL_RenderDrawLine(renderer, player->position.x + .8333*WIDTH, player->position.y + HALF_HEIGHT, 
+                                 player->position.x - dir.x + .8333*WIDTH, player->position.y 
                                  + dir.y + HALF_HEIGHT);
 
     // draw line perpendicular to view direction
@@ -236,25 +244,25 @@ void Renderer::drawWorldCentered() {
     p2.y = -20;
     xy perp1 = matrixMultiplication(rot, p1);
     xy perp2 = matrixMultiplication(rot, p2);
-    SDL_RenderDrawLine(renderer, player->position.x - perp1.x + RIGHT, 
+    SDL_RenderDrawLine(renderer, player->position.x - perp1.x + .8333*WIDTH, 
                                  player->position.y + perp1.y + HALF_HEIGHT, 
-                                 player->position.x - perp2.x + RIGHT, 
+                                 player->position.x - perp2.x + .8333*WIDTH, 
                                  player->position.y + perp2.y + HALF_HEIGHT);
                                  
     // draw sectors
     for(unsigned int i = 0; i < sectors->size(); i++) {
         // because the vertices are in clockwise order
         for(unsigned int j = 0; j < sectors->at(i)->npoints-1; j++) {
-            SDL_RenderDrawLine(renderer, sectors->at(i)->vertices.at(j).x+RIGHT, 
+            SDL_RenderDrawLine(renderer, sectors->at(i)->vertices.at(j).x+.8333*WIDTH, 
                                         sectors->at(i)->vertices.at(j).y+HALF_HEIGHT, 
-                                        sectors->at(i)->vertices.at(j+1).x+RIGHT, 
+                                        sectors->at(i)->vertices.at(j+1).x+.8333*WIDTH, 
                                         sectors->at(i)->vertices.at(j+1).y+HALF_HEIGHT);
         }
         SDL_RenderDrawLine(renderer, sectors->at(i)->vertices.at(sectors->at(i)->npoints-1).x
-                                            +RIGHT, 
+                                            +.8333*WIDTH, 
                                         sectors->at(i)->vertices.at(sectors->at(i)->npoints-1).y
                                             +HALF_HEIGHT, 
-                                        sectors->at(i)->vertices.at(0).x+RIGHT, 
+                                        sectors->at(i)->vertices.at(0).x+.8333*WIDTH, 
                                         sectors->at(i)->vertices.at(0).y+HALF_HEIGHT);
     }
 }
@@ -288,8 +296,31 @@ mat4x4* Renderer::createProjectionMatrix() {
     projectionMatrix->m32 = -((2.0f * NEAR_PLANE * FAR_PLANE) / frustum_length);
     projectionMatrix->m33 = 0;
 
-
-    errorFile << printMat4x4(*projectionMatrix) << endl;
-
     return projectionMatrix;
 }
+
+/**
+ * creates view matrix
+ *
+mat4x4* Renderer::createViewMatrix() {
+    mat4x4* ret = new mat4x4();
+
+    xyz front = player.angle;
+    xyz up; 
+    up.x=0;
+    up.y=1.0f;
+    up.z=0;
+    xyz side;
+
+    ret->m00 = side.x;
+    ret->m10 = side.y;
+    ret->m20 = side.z;
+    ret->m01 = up.x;
+    ret->m11 = up.y;
+    ret->m21 = up.z;
+    ret->m02 = -front.x;
+    ret->
+
+    return ret;
+}
+*/

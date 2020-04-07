@@ -12,6 +12,7 @@ SDL_bool InputManager::input() {
             return(SDL_TRUE);
         }
         if(event.type == SDL_KEYDOWN) {
+            /*
             if(event.key.keysym.sym == SDLK_r) {
                 // shoot
                 Bullet* bul = new Bullet();
@@ -19,6 +20,7 @@ SDL_bool InputManager::input() {
                 bul->direction = player->angle;
                 bullets->push_back(bul);
             }
+            */
             keys[event.key.keysym.sym] = true;
         }
         if(event.type == SDL_KEYUP) {

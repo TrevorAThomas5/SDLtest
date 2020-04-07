@@ -2,14 +2,14 @@
 #define RENDERER_HPP
 
 #define HEIGHT 480
-#define WIDTH 1000
+#define WIDTH 1600
 #define FOV 90
 #define HALF_HEIGHT 240
-#define HALF_WIDTH 500
-#define LEFT 250
-#define RIGHT 750
+#define HALF_WIDTH 800
+#define LEFT 400
+#define RIGHT 1200
 #define FAR_PLANE 1000.0f
-#define NEAR_PLANE 0.1f
+#define NEAR_PLANE 0.5f
 
 #include <iostream>
 #include <SDL2/SDL.h>
@@ -47,7 +47,7 @@ class Renderer {
     void drawWorldCentered();
     void clearScreen();
     mat4x4* createProjectionMatrix();
-
+    //mat4x4* createViewMatrix();
 };
 
 #endif  // RENDERER_HPP
