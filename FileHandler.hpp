@@ -1,5 +1,5 @@
 #ifndef FILE_HANDLER_HPP
-#define FILE_HAND_HPP
+#define FILE_HANDLER_HPP
 
 #include <fstream>
 #include <string>

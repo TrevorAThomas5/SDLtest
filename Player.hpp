@@ -6,7 +6,8 @@
  */
 class Player {
   public:
-    Player() : position({0, 0}), angle(0), sector(0) {}
+    Player() : angle(0), sector(0) {}
+
     xy position;
     float angle;
     unsigned int sector;
