@@ -1,6 +1,7 @@
 #include "Renderer.hpp"
 
 #include <iostream>
+#include <time.h>
 
 
 /**
@@ -33,11 +34,17 @@ void Renderer::drawScreen() {
     // draw dividing line
     SDL_RenderDrawLine(renderer, .333f*WIDTH, 0, .333f*WIDTH, HEIGHT);
     SDL_RenderDrawLine(renderer, .666f*WIDTH, 0, .666f*WIDTH, HEIGHT);
+    
+    // spin player/camera around the object 
+    player->position.x = 200 * sinf((float)SDL_GetTicks() / 600);
+    player->position.y = 200 * cosf((float)SDL_GetTicks() / 600);
 
+    // change player look angle to look at the center
+    player->angle = (M_PI / 2) - atan2(player->position.y, player->position.x);
 
     // the player has turned
     updateRotationMatrix(rot, player->angle);
-
+   
     // draw the bullets to the screen
     drawBullets();
     
